@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         verbose="true">
+    <testsuites>
+        <testsuite name="main">
+            <directory suffix="Test.php">tests/*</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <const name="DB_DSN" value="mysql:dbname=;host=;charset=UTF8"/>
+        <const name="DB_USERNAME" value=""/>
+        <const name="DB_PASSWORD" value=""/>
+        <const name="GEOCODER_API" value="https://geocode-maps.yandex.ru/1.x/"/>
+        <const name="DADATA_API" value="https://dadata.ru/api/v2/clean/address"/>
+        <const name="DADATA_KEY" value=""/>
+        <const name="DADATA_SECRET" value=""/>
+    </php>
+</phpunit>

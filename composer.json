@@ -1,0 +1,36 @@
+{
+    "name": "xoptov/address-resolver",
+    "description": "This module for address resolving by name or coordinates.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Maksim Khortov",
+            "email": "xoptov@mail.ru"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Xoptov\\AddressResolver\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Xoptov\\AddressResolver\\Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "stable",
+    "require": {
+        "php": "^7.0",
+        "ext-ds": "*",
+        "ext-pdo": "*",
+        "ext-geospatial": "*",
+        "guzzlehttp/guzzle": "^6.3",
+        "phayes/geophp": "^1.2",
+        "respect/validation": "^1.1",
+        "behat/transliterator": "^1.2"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^6.3"
+    }
+}
