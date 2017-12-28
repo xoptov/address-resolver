@@ -2,7 +2,10 @@
 
 namespace Xoptov\AddressResolver\Tests\Service;
 
+use PDO;
+use PDOStatement;
 use PHPUnit\Framework\TestCase;
+use Xoptov\AddressResolver\CoordinateManager;
 use Xoptov\AddressResolver\Model\Region;
 use Xoptov\AddressResolver\Model\Address;
 use Xoptov\AddressResolver\Model\Locality;
@@ -17,14 +20,16 @@ class AddressManagerTest extends TestCase
 
 	public static function setUpBeforeClass()
 	{
-		static::$pdo = new \PDO(DB_DSN, DB_USERNAME, DB_PASSWORD);
+		static::$pdo = new PDO(DB_DSN, DB_USERNAME, DB_PASSWORD);
 	}
 
 	public function testGetByLocation()
 	{
-		$addressManager = new AddressManager(static::$pdo);
+		$coordinateManager = new CoordinateManager();
+		$addressManager = new AddressManager(static::$pdo, $coordinateManager, 2);
+
 		$locationManager = new LocationManager();
-		$location = $locationManager->create("Краснодар", 45.0263, 39.0382);
+		$location = $locationManager->create("Старокубанская", 45.04051, 38.976);
 
 		$address = $addressManager->getByLocation($location);
 		$this->assertInstanceOf(Address::class, $address);
@@ -32,7 +37,9 @@ class AddressManagerTest extends TestCase
 
 	public function testGetByFiasId()
 	{
-		$addressManager = new AddressManager(static::$pdo);
+		$coordinateManager = new CoordinateManager();
+
+		$addressManager = new AddressManager(static::$pdo, $coordinateManager, 2);
 		$address = $addressManager->getByFiasId("bb36e20f-6946-4603-b7ee-61cdc084e077");
 
 		$this->assertInstanceOf(Address::class, $address);
@@ -43,7 +50,8 @@ class AddressManagerTest extends TestCase
 		$region = new Region();
 		$locality = new Locality();
 		$coordinate = new Coordinate(45.0263, 39.0382);
-		$addressManager = new AddressManager(static::$pdo);
+		$coordinateManager = new CoordinateManager();
+		$addressManager = new AddressManager(static::$pdo, $coordinateManager, 2);
 		$address = $addressManager->create("bb36e20f-6946-4603-b7ee-61cdc084e077", "г Краснодар, ул Старокубанская", $region, $locality, $coordinate);
 
 		$this->assertInstanceOf(Address::class, $address);
@@ -60,14 +68,15 @@ class AddressManagerTest extends TestCase
 		$address = $this->createMock(Address::class);
 		$address->expects($this->once())->method("setId");
 
-		$stmt = $this->createMock(\PDOStatement::class);
+		$stmt = $this->createMock(PDOStatement::class);
 		$stmt->expects($this->once())->method("execute")->willReturn(true);
 
-		$pdo = $this->createMock(\PDO::class);
+		$pdo = $this->createMock(PDO::class);
 		$pdo->expects($this->once())->method("prepare")->willReturn($stmt);
 		$pdo->expects($this->once())->method("lastInsertId")->willReturn(1);
 
-		$addressManager = new AddressManager($pdo);
+		$coordinateManager = new CoordinateManager();
+		$addressManager = new AddressManager($pdo, $coordinateManager, 2);
 		$addressManager->insert($address);
 	}
 
@@ -78,14 +87,15 @@ class AddressManagerTest extends TestCase
 		        ->method("getId")
 		        ->willReturn(1);
 
-		$stmt = $this->createMock(\PDOStatement::class);
+		$stmt = $this->createMock(PDOStatement::class);
 		$stmt->expects($this->any())->method("bindValue")->withAnyParameters();
 		$stmt->expects($this->once())->method("execute")->willReturn(true);
 
-		$pdo = $this->createMock(\PDO::class);
+		$pdo = $this->createMock(PDO::class);
 		$pdo->expects($this->once())->method("prepare")->willReturn($stmt);
 
-		$addressManager = new AddressManager($pdo);
+		$coordinateManager = new CoordinateManager();
+		$addressManager = new AddressManager($pdo, $coordinateManager, 2);
 		$addressManager->update($address);
 	}
 }

@@ -3,7 +3,7 @@
 namespace Xoptov\AddressResolver;
 
 use Ds\Vector;
-use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
 use Xoptov\AddressResolver\Model\Location;
 use Xoptov\AddressResolver\Model\Coordinate;
 
@@ -12,7 +12,7 @@ class YandexGeoCoder implements GeoCoderInterface
 	/** @var string */
 	private $url;
 
-	/** @var client */
+	/** @var ClientInterface */
 	private $client;
 
 	/** @var LocationManager */
@@ -22,14 +22,15 @@ class YandexGeoCoder implements GeoCoderInterface
 	private $buffer;
 
 	/**
-	 * YandexGeoCoder constructor.
+	 * @param ClientInterface $client
+	 * @param LocationManager $locationManager
 	 * @param string $url
 	 */
-	public function __construct($url)
+	public function __construct(ClientInterface $client, LocationManager $locationManager, $url)
 	{
+		$this->client = $client;
+		$this->locationManager = $locationManager;
 		$this->url = $url;
-		$this->client = new Client();
-		$this->locationManager = new LocationManager();
 		$this->buffer = new Vector();
 	}
 

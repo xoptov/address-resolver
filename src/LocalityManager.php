@@ -2,6 +2,7 @@
 
 namespace Xoptov\AddressResolver;
 
+use PDO;
 use Exception;
 use Ds\Vector;
 use Xoptov\AddressResolver\Model\Region;
@@ -11,22 +12,29 @@ use Xoptov\AddressResolver\Model\Coordinate;
 
 class LocalityManager
 {
-	/** @var \PDO */
+	/** @var PDO */
 	private $pdo;
 
 	/** @var CoordinateManager */
 	private $coordinateManager;
 
+	/** @var float */
+	private $radius;
+
 	/** @var Vector */
 	private $buffer;
 
 	/**
-	 * @param \PDO $pdo
+	 * @param PDO $pdo
+	 * @param CoordinateManager $coordinateManager
+	 * @param float $radius
 	 */
-	public function __construct(\PDO $pdo)
+	public function __construct(PDO $pdo, CoordinateManager $coordinateManager, $radius = 10.0)
 	{
 		$this->pdo = $pdo;
-		$this->coordinateManager = new CoordinateManager();
+		$this->coordinateManager = $coordinateManager;
+		$this->radius = $radius;
+
 		$this->buffer = new Vector();
 	}
 
@@ -54,7 +62,7 @@ class LocalityManager
 				"coordinates" => array($coordinate->getLongitude(), $coordinate->getLatitude())
 			);
 
-			if ($locality->getName() === $location->getName() && vincenty($to, $from) / 1000 <= 10) {
+			if ($locality->getName() === $location->getName() && vincenty($to, $from) / 1000 <= $this->radius) {
 				return true;
 			}
 
@@ -69,7 +77,7 @@ class LocalityManager
 			SELECT id, fias_id AS fiasId, `name`, `type`, region_id AS region, ST_AsWKB(coordinate) AS coordinate_wkb
 			FROM locality
 			WHERE name = :name
-				AND ST_Distance_Sphere(coordinate, POINT(:longitude, :latitude)) / 1000 <= 10
+				AND ST_Distance_Sphere(coordinate, POINT(:longitude, :latitude)) / 1000 <= :radius
 			LIMIT 1
 		";
 
@@ -77,6 +85,7 @@ class LocalityManager
 		$stmt->bindValue(":name", $location->getName(), \PDO::PARAM_STR);
 		$stmt->bindValue(":longitude", $location->getLongitude());
 		$stmt->bindValue(":latitude", $location->getLatitude());
+		$stmt->bindValue(":radius", $this->radius);
 
 		if ($stmt->execute()) {
 			$locality = $stmt->fetchObject(Locality::class);

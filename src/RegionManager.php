@@ -2,12 +2,13 @@
 
 namespace Xoptov\AddressResolver;
 
+use PDO;
 use Ds\Vector;
 use Xoptov\AddressResolver\Model\Region;
 
 class RegionManager
 {
-	/** @var \PDO */
+	/** @var PDO */
 	private $pdo;
 
 	/** @var Vector */
@@ -16,9 +17,9 @@ class RegionManager
 	/**
 	 * RegionManager constructor.
 	 *
-	 * @param \PDO $pdo
+	 * @param PDO $pdo
 	 */
-	public function __construct(\PDO $pdo)
+	public function __construct(PDO $pdo)
 	{
 		$this->pdo = $pdo;
 		$this->buffer = new Vector();

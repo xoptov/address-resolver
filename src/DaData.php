@@ -3,7 +3,7 @@
 namespace Xoptov\AddressResolver;
 
 use Ds\Map;
-use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
 use Respect\Validation\Validator;
 use Xoptov\AddressResolver\Model\Region;
 use Xoptov\AddressResolver\Model\Locality;
@@ -11,7 +11,7 @@ use Xoptov\AddressResolver\Model\Coordinate;
 
 class DaData
 {
-	/** @var Client */
+	/** @var ClientInterface */
 	private $client;
 
 	/** @var string */
@@ -27,13 +27,14 @@ class DaData
 	private $buffer;
 
 	/**
+	 * @param ClientInterface $client
 	 * @param string $url
 	 * @param string $apiKey
 	 * @param string $secretKey
 	 */
-	public function __construct($url, $apiKey, $secretKey)
+	public function __construct(ClientInterface $client, $url, $apiKey, $secretKey)
 	{
-		$this->client = new Client();
+		$this->client = $client;
 		$this->url = $url;
 		$this->apiKey = $apiKey;
 		$this->secretKey = $secretKey;

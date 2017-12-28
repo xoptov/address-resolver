@@ -2,8 +2,10 @@
 
 namespace Xoptov\AddressResolver;
 
+use PDO;
 use Exception;
 use Ds\Vector;
+use PDOStatement;
 use Xoptov\AddressResolver\Model\Region;
 use Xoptov\AddressResolver\Model\Address;
 use Xoptov\AddressResolver\Model\Locality;
@@ -12,22 +14,29 @@ use Xoptov\AddressResolver\Model\Coordinate;
 
 class AddressManager
 {
-	/** @var \PDO */
+	/** @var PDO */
 	private $pdo;
 
 	/** @var CoordinateManager */
 	private $coordinateManager;
 
+	/** @var float */
+	private $radius;
+
 	/** @var Vector */
 	private $buffer;
 
 	/**
-	 * @param \PDO $pdo
+	 * @param PDO $pdo
+	 * @param CoordinateManager $coordinateManager
+	 * @param float $radius
 	 */
-	public function __construct(\PDO $pdo)
+	public function __construct(PDO $pdo, CoordinateManager $coordinateManager, $radius = 0.5)
 	{
 		$this->pdo = $pdo;
-		$this->coordinateManager = new CoordinateManager();
+		$this->coordinateManager = $coordinateManager;
+		$this->radius = $radius;
+
 		$this->buffer = new Vector();
 	}
 
@@ -57,7 +66,7 @@ class AddressManager
 
 			$pattern = sprintf("/%s/i", $location->getName());
 
-			if (preg_match($pattern, $address->getValue()) && vincenty($to, $from) / 1000 <= 0.5) {
+			if (preg_match($pattern, $address->getValue()) && vincenty($to, $from) / 1000 <= $this->radius) {
 				return true;
 			}
 
@@ -77,16 +86,17 @@ class AddressManager
 				ST_AsWKB(a.coordinate) AS coordinate_wkb,
 				ST_Distance_Sphere(a.coordinate, POINT(:longitude, :latitude)) AS distance 
 			FROM address a
-				INNER JOIN locality l ON a.locality_id = l.id AND l.name LIKE :name
-			WHERE ST_Distance_Sphere(a.coordinate, POINT(:longitude, :latitude)) / 1000 <= 0.5
+			WHERE a.value LIKE :value
+				AND ST_Distance_Sphere(a.coordinate, POINT(:longitude, :latitude)) / 1000 <= :radius
 			ORDER BY distance ASC
 			LIMIT 1
 		";
 
 		$stmt = $this->pdo->prepare($sql);
-		$stmt->bindValue(":name", '%' . $location->getName() . '%', \PDO::PARAM_STR);
+		$stmt->bindValue(":value", '%' . $location->getName() . '%', PDO::PARAM_STR);
 		$stmt->bindValue(":longitude", $location->getLongitude());
 		$stmt->bindValue(":latitude", $location->getLatitude());
+		$stmt->bindValue(":radius", $this->radius);
 
 		if ($stmt->execute()) {
 			$address = $stmt->fetchObject(Address::class);
@@ -129,7 +139,7 @@ class AddressManager
 		";
 
 		$stmt = $this->pdo->prepare($sql);
-		$stmt->bindValue(":fias_id", $fiasId, \PDO::PARAM_STR);
+		$stmt->bindValue(":fias_id", $fiasId, PDO::PARAM_STR);
 
 		if ($stmt->execute()) {
 			$address = $stmt->fetchObject(Address::class);
@@ -210,7 +220,7 @@ class AddressManager
 		}
 
 		$sql = "
-			UPDATE address SET\PHPUnit\Runner\
+			UPDATE address SET
 				fias_id = :fias_id,
 				region_id = :region_id,
 				locality_id = :locality_id,
@@ -227,10 +237,10 @@ class AddressManager
 	}
 
 	/**
-	 * @param \PDOStatement $stmt
+	 * @param PDOStatement $stmt
 	 * @param Address $address
 	 */
-	private function bindValues(\PDOStatement $stmt, Address $address)
+	private function bindValues(PDOStatement $stmt, Address $address)
 	{
 		$stmt->bindValue(":fias_id", $address->getFiasId());
 		$stmt->bindValue(":value", $address->getValue());

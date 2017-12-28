@@ -3,6 +3,7 @@
 namespace Xoptov\AddressResolver;
 
 use PDO;
+use StdClass;
 use Exception;
 use Respect\Validation\Validator;
 use Xoptov\AddressResolver\Model\Region;
@@ -36,19 +37,20 @@ class AddressResolver
 	 * AddressResolver constructor.
 	 *
 	 * @param PDO $pdo
-	 * @param string $geoCoderUrl
-	 * @param string $daDataUrl
-	 * @param string $daDataApiKey
-	 * @param string $daDataSecretKey
+	 * @param AddressManager $addressManager
+	 * @param LocalityManager $localityManager
+	 * @param RegionManager $regionManager
+	 * @param GeoCoderInterface $geoCoder
+	 * @param DaData $daData
 	 */
-	public function __construct(PDO $pdo, $geoCoderUrl, $daDataUrl, $daDataApiKey, $daDataSecretKey)
+	public function __construct(PDO $pdo, AddressManager $addressManager, LocalityManager $localityManager, RegionManager $regionManager, GeoCoderInterface $geoCoder, DaData $daData)
 	{
 		$this->pdo = $pdo;
-		$this->addressManager = new AddressManager($pdo);
-		$this->localityManager = new LocalityManager($pdo);
-		$this->regionManager = new RegionManager($pdo);
-		$this->goeCoder = new YandexGeoCoder($geoCoderUrl);
-		$this->daData = new DaData($daDataUrl, $daDataApiKey, $daDataSecretKey);
+		$this->addressManager = $addressManager;
+		$this->localityManager = $localityManager;
+		$this->regionManager = $regionManager;
+		$this->goeCoder = $geoCoder;
+		$this->daData = $daData;
 	}
 
 	/**
@@ -130,12 +132,12 @@ class AddressResolver
 	}
 
 	/**
-	 * @param \StdClass $addressObject
+	 * @param StdClass $addressObject
 	 * @return Address
 	 * @throws AddressResolveException
 	 * @throws Exception
 	 */
-	private function createFromDaData(\StdClass $addressObject, Coordinate $coordinate)
+	private function createFromDaData(StdClass $addressObject, Coordinate $coordinate)
 	{
 		$validator = Validator::create();
 
