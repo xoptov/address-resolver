@@ -32,8 +32,8 @@ class AddressResolverTest extends TestCase
 		$daData = new DaData($client, DADATA_API, DADATA_KEY, DADATA_SECRET);
 		$resolver = new AddressResolver($pdo, $addressManager, $localityManager, $regionManager, $geoCoder, $daData);
 
-		$coordinate = new Coordinate(44.897866, 37.402267);
-		$location = new Location("Анапская", $coordinate);
+		$coordinate = new Coordinate(44.583774, 38.038101);
+		$location = new Location(null, $coordinate);
 
 		$address = $resolver->resolve($location);
 

@@ -64,9 +64,13 @@ class AddressManager
 				"coordinates" => array($coordinate->getLongitude(), $coordinate->getLatitude())
 			);
 
-			$pattern = sprintf("/%s/i", $location->getName());
+			if ($location->getName()) {
+				$pattern = sprintf("/%s/i", $location->getName());
 
-			if (preg_match($pattern, $address->getValue()) && vincenty($to, $from) / 1000 <= $this->radius) {
+				if (preg_match($pattern, $address->getValue()) && vincenty($to, $from) / 1000 <= $this->radius) {
+					return true;
+				}
+			} elseif (vincenty($to, $from) / 1000 <= $this->radius) {
 				return true;
 			}
 
@@ -75,6 +79,12 @@ class AddressManager
 
 		if ($result->count()) {
 			return $result->first();
+		}
+
+		$nameCondition = '';
+
+		if ($location->getName()) {
+			$nameCondition = "a.value LIKE :value AND";
 		}
 
 		$sql = "
@@ -86,14 +96,17 @@ class AddressManager
 				ST_AsWKB(a.coordinate) AS coordinate_wkb,
 				ST_Distance_Sphere(a.coordinate, POINT(:longitude, :latitude)) AS distance 
 			FROM address a
-			WHERE a.value LIKE :value
-				AND ST_Distance_Sphere(a.coordinate, POINT(:longitude, :latitude)) / 1000 <= :radius
+			WHERE " . $nameCondition . " ST_Distance_Sphere(a.coordinate, POINT(:longitude, :latitude)) / 1000 <= :radius
 			ORDER BY distance ASC
 			LIMIT 1
 		";
 
 		$stmt = $this->pdo->prepare($sql);
-		$stmt->bindValue(":value", '%' . $location->getName() . '%', PDO::PARAM_STR);
+
+		if ($location->getName()) {
+			$stmt->bindValue(":value", '%' . $location->getName() . '%', PDO::PARAM_STR);
+		}
+
 		$stmt->bindValue(":longitude", $location->getLongitude());
 		$stmt->bindValue(":latitude", $location->getLatitude());
 		$stmt->bindValue(":radius", $this->radius);

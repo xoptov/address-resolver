@@ -62,7 +62,11 @@ class LocalityManager
 				"coordinates" => array($coordinate->getLongitude(), $coordinate->getLatitude())
 			);
 
-			if ($locality->getName() === $location->getName() && vincenty($to, $from) / 1000 <= $this->radius) {
+			if ($location->getName()) {
+				if ($locality->getName() === $location->getName() && vincenty($to, $from) / 1000 <= $this->radius) {
+					return true;
+				}
+			} elseif (vincenty($to, $from) / 1000 <= $this->radius) {
 				return true;
 			}
 
@@ -73,16 +77,24 @@ class LocalityManager
 			return $result->first();
 		}
 
+		$nameCondition = '';
+		if ($location->getName()) {
+			$nameCondition = "name = :name AND";
+		}
+
 		$sql = "
 			SELECT id, fias_id AS fiasId, `name`, `type`, region_id AS region, ST_AsWKB(coordinate) AS coordinate_wkb
 			FROM locality
-			WHERE name = :name
-				AND ST_Distance_Sphere(coordinate, POINT(:longitude, :latitude)) / 1000 <= :radius
+			WHERE " . $nameCondition . " ST_Distance_Sphere(coordinate, POINT(:longitude, :latitude)) / 1000 <= :radius
 			LIMIT 1
 		";
 
 		$stmt = $this->pdo->prepare($sql);
-		$stmt->bindValue(":name", $location->getName(), \PDO::PARAM_STR);
+
+		if ($location->getName()) {
+			$stmt->bindValue(":name", $location->getName(), \PDO::PARAM_STR);
+		}
+
 		$stmt->bindValue(":longitude", $location->getLongitude());
 		$stmt->bindValue(":latitude", $location->getLatitude());
 		$stmt->bindValue(":radius", $this->radius);
