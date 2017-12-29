@@ -13,7 +13,8 @@ use Xoptov\AddressResolver\LocalityManager;
 use Xoptov\AddressResolver\LocationManager;
 use Xoptov\AddressResolver\RegionManager;
 use Xoptov\AddressResolver\YandexGeoCoder;
-use Xoptov\Model\Location;
+use Xoptov\AddressResolver\Model\Coordinate;
+use Xoptov\AddressResolver\Model\Location;
 
 class AddressResolverTest extends TestCase
 {
@@ -31,8 +32,11 @@ class AddressResolverTest extends TestCase
 		$daData = new DaData($client, DADATA_API, DADATA_KEY, DADATA_SECRET);
 		$resolver = new AddressResolver($pdo, $addressManager, $localityManager, $regionManager, $geoCoder, $daData);
 
-		$location = new Location();
+		$coordinate = new Coordinate(44.897866, 37.402267);
+		$location = new Location("Анапская", $coordinate);
 
-		$resolver->resolve();
+		$address = $resolver->resolve($location);
+
+		return;
 	}
 }

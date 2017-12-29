@@ -11,13 +11,12 @@ class Location
 
 	/**
 	 * @param string $name
-	 * @return Location
+	 * @param Coordinate $coordinate
 	 */
-	public function setName($name)
+	public function __construct($name, Coordinate $coordinate)
 	{
 		$this->name = $name;
-
-		return $this;
+		$this->coordinate = $coordinate;
 	}
 
 	/**

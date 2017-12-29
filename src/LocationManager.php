@@ -7,12 +7,16 @@ use Xoptov\AddressResolver\Model\Coordinate;
 
 class LocationManager
 {
+	/**
+	 * @param string $name
+	 * @param float $latitude
+	 * @param float $longitude
+	 *
+	 * @return Location
+	 */
 	public function create($name, $latitude, $longitude)
 	{
-		$location = new Location();
-		$location
-			->setName($name)
-		    ->setCoordinate(new Coordinate($latitude, $longitude));
+		$location = new Location($name, new Coordinate($latitude, $longitude));
 
 		return $location;
 	}

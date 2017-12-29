@@ -23,7 +23,9 @@ trait CoordinateTrait
 	 */
 	public function getCoordinate()
 	{
-		return $this->coordinate;
+		$coordinate = clone $this->coordinate;
+
+		return $coordinate;
 	}
 
 	/**
