@@ -10,9 +10,6 @@
         }
     ],
     "autoload": {
-        "files": [
-            "vendor/phayes/geophp/geoPHP.inc"
-        ],
         "psr-4": {
             "Xoptov\\AddressResolver\\": "src/"
         }
