@@ -22,10 +22,12 @@ trait CoordinateTrait
 	 * @return Coordinate
 	 */
 	public function getCoordinate()
-	{
-		$coordinate = clone $this->coordinate;
+    {
+        if ($this->coordinate) {
+            return clone $this->coordinate;
+        }
 
-		return $coordinate;
+		return null;
 	}
 
 	/**

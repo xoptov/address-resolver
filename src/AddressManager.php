@@ -84,7 +84,7 @@ class AddressManager
 		$nameCondition = '';
 
 		if ($location->getName()) {
-			$nameCondition = "a.value LIKE :value AND";
+			$nameCondition = "a.value LIKE :value OR";
 		}
 
 		$sql = "

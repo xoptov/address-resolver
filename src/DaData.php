@@ -97,6 +97,7 @@ class DaData
 	}
 
 	/**
+     * Метод для создания обьекта населенного пункта по объекту полученному из ДаДата.
 	 * @param LocalityManager $manager
 	 * @param \StdClass $addressObject
 	 * @param Region $region
@@ -126,8 +127,21 @@ class DaData
 			Validator::attribute("settlement_fias_id", Validator::notBlank())
 		));
 
+		if ($validator->validate($addressObject)) {
+            return $manager->create($addressObject->settlement_fias_id, $addressObject->settlement, $addressObject->settlement_type_full, $region, $coordinate, true);
+        }
+
+        unset($validator);
+
+		$validator = Validator::create();
+		$validator->addRules(array(
+		    Validator::attribute("region", Validator::notBlank()),
+            Validator::attribute("region_type_full", Validator::notBlank()),
+            Validator::attribute("region_fias_id", Validator::notBlank())
+        ));
+
 		$validator->check($addressObject);
 
-		return $manager->create($addressObject->settlement_fias_id, $addressObject->settlement, $addressObject->settlement_type_full, $region, $coordinate, true);
+		return $manager->create($addressObject->region_fias_id, $addressObject->region, $addressObject->region_type_full, $region, $coordinate, true);
 	}
 }
