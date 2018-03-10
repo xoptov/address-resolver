@@ -79,7 +79,7 @@ class LocalityManager
 
 		$nameCondition = '';
 		if ($location->getName()) {
-			$nameCondition = "name = :name AND";
+			$nameCondition = "name = :name OR";
 		}
 
 		$sql = "
@@ -114,17 +114,18 @@ class LocalityManager
 	}
 
 	/**
-	 * @param string $localityFiasId
-	 * @param string $settlementFiasId
+	 * @param string|array $fiasId
 	 * @return Locality|null
 	 * @throws Exception
 	 */
-	public function getByFiasId($localityFiasId, $settlementFiasId)
+	public function getByFiasId($fiasId)
 	{
-		$result = $this->buffer->filter(function (Locality $locality) use ($localityFiasId, $settlementFiasId) {
-			if ($locality->getFiasId() === $localityFiasId || $locality->getFiasId() === $settlementFiasId) {
-				return true;
-			}
+		$result = $this->buffer->filter(function (Locality $locality) use ($fiasId) {
+		    if (is_array($fiasId) && in_array($locality->getFiasId(), $fiasId)) {
+		        return true;
+		    } elseif (is_string($fiasId) && $locality->getFiasId() === $fiasId) {
+		        return true;
+            }
 
 			return false;
 		});
@@ -133,22 +134,34 @@ class LocalityManager
 			return $result->first();
 		}
 
-		$sql = "
-			SELECT id, fias_id AS fiasId, `name`, `type`, region_id AS region, ST_AsWKB(coordinate) AS coordinate_wkb
-			FROM locality
-			WHERE fias_id = :locality_fias_id
-				OR fias_id = :settlement_fias_id
-			LIMIT 1
-		";
+		if (is_array($fiasId)) {
+		    $sql = "
+                SELECT id, fias_id AS fiasId, `name`, `type`, region_id AS region, ST_AsWKB(coordinate) AS coordinate_wkb
+                FROM locality
+                WHERE fias_id IN (:fias_id)
+                LIMIT 1
+		    ";
 
-		$stmt = $this->pdo->prepare($sql);
-		$stmt->bindValue(":locality_fias_id", $localityFiasId);
-		$stmt->bindValue(":settlement_fias_id", $settlementFiasId);
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(":fias_id", implode(',', $fiasId));
+        } else {
+            $sql = "
+			    SELECT id, fias_id AS fiasId, `name`, `type`, region_id AS region, ST_AsWKB(coordinate) AS coordinate_wkb
+			    FROM locality
+			    WHERE fias_id = :fias_id
+			    LIMIT 1
+		    ";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(":fias_id", $fiasId);
+        }
 
 		if ($stmt->execute()) {
 			$locality = $stmt->fetchObject(Locality::class);
 			if ($locality instanceof Locality) {
-				$locality->setCoordinate($this->coordinateManager->createFromWKB($locality->coordinate_wkb));
+			    if (!empty($locality->coordinate_wkb)) {
+                    $locality->setCoordinate($this->coordinateManager->createFromWKB($locality->coordinate_wkb));
+                }
 				$this->buffer->push($locality);
 
 				return $locality;

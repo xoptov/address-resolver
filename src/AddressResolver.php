@@ -5,6 +5,7 @@ namespace Xoptov\AddressResolver;
 use PDO;
 use StdClass;
 use Exception;
+use PDOException;
 use Respect\Validation\Validator;
 use Xoptov\AddressResolver\Model\Region;
 use Xoptov\AddressResolver\Model\Address;
@@ -124,7 +125,7 @@ class AddressResolver
 			if (!$this->addressManager->insert($address) && $this->pdo->inTransaction()) {
 				$this->pdo->rollBack();
 
-				throw new \PDOException("Can not inserting new address from locality.");
+				throw new PDOException("Can not inserting new address from locality.");
 			}
 		}
 
@@ -136,6 +137,7 @@ class AddressResolver
 	 * @return Address
 	 * @throws AddressResolveException
 	 * @throws Exception
+     * @todo тут необходимо реализовать возможность обработки Москвы и Питера.
 	 */
 	private function createFromDaData(StdClass $addressObject, Coordinate $coordinate)
 	{
@@ -144,15 +146,25 @@ class AddressResolver
 		$validator->addRules(array(
 			Validator::attribute("result", Validator::notBlank()),
 			Validator::attribute("fias_id", Validator::notBlank()),
-			Validator::attribute("region_fias_id", Validator::notBlank()),
 			Validator::oneOf(
+                Validator::attribute("region_fias_id", Validator::notBlank()),
 				Validator::attribute("city_fias_id", Validator::notBlank()),
 				Validator::attribute("settlement_fias_id", Validator::notBlank())
 			)
 		));
 
 		$validator->check($addressObject);
-		$locality = $this->localityManager->getByFiasId($addressObject->city_fias_id, $addressObject->settlement_fias_id);
+
+		$fiasId = array();
+
+		// Вытаскиваем все fiasId перечисленные в списке.
+		foreach (["settlement", "city", "region"] as $type) {
+		    if (property_exists($addressObject, $type . "_fias_id") && !empty($addressObject->{$type . "_fias_id"})) {
+                array_push($fiasId, $addressObject->{$type . "_fias_id"});
+            }
+        }
+
+		$locality = $this->localityManager->getByFiasId($fiasId);
 
 		if ($locality instanceof Locality) {
 			// Если мы нашли населенный пункт по FiasId нужно проверить его координаты, и если координат нет то
@@ -161,7 +173,7 @@ class AddressResolver
 				$locality->setCoordinate($coordinate);
 
 				if (!$this->localityManager->update($locality)) {
-					throw new \PDOException("Error updating locality coordinates.");
+					throw new PDOException("Error updating locality coordinates.");
 				}
 			}
 
@@ -183,7 +195,7 @@ class AddressResolver
 			if (!$this->regionManager->insert($region)) {
 				$this->pdo->rollBack();
 
-				throw new \PDOException("Error inserting new region.");
+				throw new PDOException("Error inserting new region.");
 			}
 		}
 
@@ -193,15 +205,20 @@ class AddressResolver
 		if (!$this->localityManager->insert($locality)) {
 			$this->pdo->rollBack();
 
-			throw new \PDOException("Error inserting new locality.");
+			throw new PDOException("Error inserting new locality.");
 		}
 
-		$address = $this->createFromLocality($locality, true);
+		// Пытаемся получать адрес по FiasId так как адрес с таким ID может быть уже создан.
+		$address = $this->addressManager->getByFiasId($locality->getFiasId());
+
+		if (empty($address)) {
+            $address = $this->createFromLocality($locality, true);
+        }
 
 		if ($this->pdo->commit()) {
 			return $address;
 		}
 
-		throw new \PDOException("Error creating address from DaData.");
+		throw new PDOException("Error creating address from DaData.");
 	}
 }
